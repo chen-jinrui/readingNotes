@@ -354,10 +354,148 @@ Array.prototype.copyWithin(target, start = 0, end = this.length)
 // [4, 5, 3, 4, 5]
 // 上面代码表示将从 3 号位直到数组结束的成员（4 和 5），复制到从 0 号位开始的位置，结果覆盖了原来的 1 和 2。
 
+// 将3号位复制到0号位
+[1, 2, 3, 4, 5].copyWithin(0, 3, 4)
+// [4, 2, 3, 4, 5]
+
+// -2相当于3号位，-1相当于4号位
+[1, 2, 3, 4, 5].copyWithin(0, -2, -1)
+// [4, 2, 3, 4, 5]
+
+// 将3号位复制到0号位
+[].copyWithin.call({length: 5, 3: 1}, 0, 3)
+// {0: 1, 3: 1, length: 5}
+
+// 将2号位到数组结束，复制到0号位
+let i32a = new Int32Array([1, 2, 3, 4, 5]);
+i32a.copyWithin(0, 2);
+// Int32Array [3, 4, 5, 4, 5]
+
+// 对于没有部署 TypedArray 的 copyWithin 方法的平台
+// 需要采用下面的写法
+[].copyWithin.call(new Int32Array([1, 2, 3, 4, 5]), 0, 3, 4);
+// Int32Array [4, 2, 3, 4, 5]
+
+// 5. 数组实例的 find() 和 findIndex()
+
+// 数组实例的find方法，用于找出第一个符合条件的数组成员。
+// 它的参数是一个回调函数，所有数组成员依次执行该回调函数，直到找出第一个返回值为true的成员，然后返回该成员。
+// 如果没有符合条件的成员，则返回undefined。
+
+[1, 2, 4, -3, 6].find(n => n < 0)
+// -3
+[1, 5, 9, 10].find(function(value, index, arr) {
+    return value > 9
+}) // 10
+// 上面代码中，find方法的回调函数可以接受三个参数，依次为当前的值、当前的位置和原数组。
+
+// 数组实例的findIndex方法的用法与find方法非常类似，返回第一个符合条件的数组成员的位置，如果所有成员都不符合条件，则返回-1。
+[1, 5, 10, 15].findIndex(function(value, index, arr) {
+    return value > 9;
+}) // 2
+
+// 这两个方法都可以接受第二个参数，用来绑定回调函数的this对象。
+function f(v) {
+    return v > this.age
+}
+let person = { name: 'John', age: 20 };
+[2, 18, 34, 25].find(f, person);
+// 上面的代码中，find函数接收了第二个参数person对象，回调函数中的this对象指向person对象
+
+// 另外，这两个方法都可以发现NaN，弥补了数组的indexOf方法的不足。
+[NaN].indexOf(NaN)
+// -1
+
+[NaN].findIndex(y => Object.is(NaN, y))
+// 0
+
+// 上面代码中，indexOf方法无法识别数组的NaN成员，但是findIndex方法可以借助Object.is方法做到。
+
+// 6. 数组实例的fill()
+// fill 方法使用给定值填充一个数组
+new Array(3).fill(7)
+// (3) [7, 7, 7]
+['a', 'b', 'c'].fill(1)
+// (3) [1, 1, 1]
+// 上面代码表明，fill方法用于空数组的初始化非常方便。数组中已有的元素，会被全部抹去。
+// fill方法还可以接受第二个和第三个参数，用于指定填充的起始位置和结束位置。
+['a', 'b', 'c'].fill(7, 1, 2)
+// ['a', 7, 'c']
+
+// 注意，如果填充的类型为对象，那么被赋值的是同一个内存地址的对象，而不是深拷贝对象。
+let arr = new Array(3).fill({name: "Mike"});
+arr[0].name = "Ben";
+arr
+// [{name: "Ben"}, {name: "Ben"}, {name: "Ben"}]
+
+let arr = new Array(3).fill([]);
+arr[0].push(5);
+arr
+// [[5], [5], [5]]
+
+// 7. 数组实例的 entries(), keys() 和 values()
+// ES6 提供三个新的方法——entries()，keys()和values()——用于遍历数组。
+// 它们都返回一个遍历器对象（详见《Iterator》一章），可以用for...of循环进行遍历，
+// 唯一的区别是keys()是对键名的遍历、values()是对键值的遍历，entries()是对键值对的遍历。
+
+for(let index of ['a', 'b'].keys()) {
+    console.log(index)
+}
+// 0 1
+for(let elem of ['a', 'b'].values()) {
+    console.log(elem)
+}
+// a b
+for (let [index, elem] of ['a', 'b'].entries()) {
+    console.log(index, elem)
+}
+// 0 "a"
+// 1 "b"
+
+// 如果不使用for...of循环，可以手动调用遍历器对象的next方法，进行遍历。
+
+let letter = ['a', 'b', 'c'];
+let entries = letter.entries();
+console.log(entries.next().value); // [0, 'a']
+console.log(entries.next().value); // [1, 'b']
+console.log(entries.next().value); // [2, 'c']
 
 
+// 8. 数组实例的 includes()
+// Array.prototype.includes方法返回一个布尔值，表示某个数组是否包含给定的值，与字符串的includes方法类似。ES2016 引入了该方法。
 
+[1, 2, 3].includes(2)     // true
+[1, 2, 3].includes(4)     // false
+[1, 2, NaN].includes(NaN) // true
 
+// 该方法的第二个参数表示搜索的起始位置，默认为0。如果第二个参数为负数，则表示倒数的位置，
+// 如果这时它大于数组长度（比如第二个参数为-4，但数组长度为3），则会重置为从0开始。
+[1, 2, 3].includes(2,2) //false
+[1, 2, 3].includes(2, -2) //true
 
+// 没有该方法之前，我们通常使用数组的indexOf方法，检查是否包含某个值。
+// indexOf方法有两个缺点，
+// 一是不够语义化，它的含义是找到参数值的第一个出现位置，所以要去比较是否不等于-1，表达起来不够直观。
+// 二是，它内部使用严格相等运算符（===）进行判断，这会导致对NaN的误判。
 
+[NaN].indexOf(NaN) // -1
+[[1,2],[3,4]].indexOf([1,2]) // -1
 
+// includes使用的是不一样的判断算法，就没有这个问题。
+
+[NaN].includes(NaN)
+// true
+
+// 下面代码用来检查当前环境是否支持该方法，如果不支持，部署一个简易的替代版本。
+const contains = (() => 
+    Array.prototype.includes
+        ? (arr, value) => arr.includes(value)
+        : (arr, value) => arr.some(el => el === value)
+)();
+contains(['foo', 'bar'], 'baz'); // => false
+
+// 另外，Map 和 Set 数据结构有一个has方法，需要注意与includes区分。
+// Map 结构的has方法，是用来查找键名的，
+// 比如Map.prototype.has(key)、WeakMap.prototype.has(key)、Reflect.has(target, propertyKey)。
+// Set 结构的has方法，是用来查找值的，
+// 比如Set.prototype.has(value)、WeakSet.prototype.has(value)。
