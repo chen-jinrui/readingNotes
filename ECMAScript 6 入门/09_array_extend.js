@@ -499,3 +499,159 @@ contains(['foo', 'bar'], 'baz'); // => false
 // 比如Map.prototype.has(key)、WeakMap.prototype.has(key)、Reflect.has(target, propertyKey)。
 // Set 结构的has方法，是用来查找值的，
 // 比如Set.prototype.has(value)、WeakSet.prototype.has(value)。
+
+// 9. 数组实例的 flat(), flatMap()
+// 数组的成员有时还是数组，Array.prototype.flat()用于将嵌套的数组“拉平”，变成一维的数组。
+// 该方法返回一个新数组, 对原数据没有影响
+[1, 2, [3, 4]].flat()
+// 上面代码中，原数组的成员里面有一个数组，flat()方法将子数组的成员取出来，添加在原来的位置。
+
+[1, 2, [3, [4, 5]]].flat() // [1, 2, 3, [4, 5]]
+// flat()默认只会“拉平”一层，如果想要“拉平”多层的嵌套数组，可以将flat()方法的参数写成一个整数，表示想要拉平的层数，默认为1。
+[1, 2, [3, [4, 5]]].flat(2) // [1, 2, 3, 4, 5]
+
+// 上面代码中，flat()的参数为2，表示要“拉平”两层的嵌套数组。
+
+// 如果不管有多少层嵌套，都要转成一维数组，可以用Infinity关键字作为参数。
+[1, [2, [3]]].flat(Infinity) // [1, 2, 3]
+
+// 如果原数组有空位，flat()方法会跳过空位。
+[1, 2, , 4, 5].flat() // [1, 2, 4, 5]
+
+// flatMap()方法对原数组的每个成员执行一个函数（相当于执行Array.prototype.map()），
+// 然后对返回值组成的数组执行flat()方法。该方法返回一个新数组，不改变原数组。
+
+// 相当于 [[2, 4], [3, 6], [4, 8]].flat()
+[2, 3, 4].flatMap(x => [x, x*2])
+// [2, 4, 3, 6, 4, 8]
+// flatMap()只能展开一层数组。
+// 相当于 [[[2]], [[4]], [[6]], [[8]]].flat()
+[1, 2, 3, 4].flatMap(x => [[x*2]])
+// [[2], [4], [6], [8]]
+// 上面代码中，遍历函数返回的是一个双层的数组，但是默认只能展开一层，因此flatMap()返回的还是一个嵌套数组。
+
+//flatMap()方法的参数是一个遍历函数，该函数可以接受三个参数，分别是当前数组成员、当前数组成员的位置（从零开始）、原数组。
+
+arr.flatMap(function callback(currentValue[, index[, array]]) {
+    // ...
+}[, thisArg])
+// flatMap()方法还可以有第二个参数，用来绑定遍历函数里面的this。
+
+
+// 10. 数组的空位
+// 数组的空位，指数组的某一个位置没有任何值。比如，Array构造函数返回的数组都是空位。
+Array(3) // [, , ,]  [empty × 3]
+// 上面代码中，Array(3)返回一个具有 3 个空位的数组。
+
+// 注意，空位不是undefined，一个位置的值等于undefined，依然是有值的。空位是没有任何值，in运算符可以说明这一点。
+0 in [undefined, undefined, undefined] // true
+0 in [, , ,] // false
+// 上面代码说明，第一个数组的 0 号位置是有值的，第二个数组的 0 号位置没有值。
+
+// ES5 对空位的处理，已经很不一致了，大多数情况下会忽略空位。
+// forEach(), filter(), reduce(), every() 和some()都会跳过空位。
+// map()会跳过空位，但会保留这个值
+// join()和toString()会将空位视为undefined，而undefined和null会被处理成空字符串。
+
+// forEach
+[,'a'].forEach((x, i) => console.log(i)) // 1
+// filter
+['a',,'b'].filter(x => true) // ["a", "b"]
+// every
+[,'a'].every(x => x === 'a') // true
+// reduce
+[1,,2].reduce((x, y) => x + y) //3
+// some
+[,'a'].some(x => x !== 'a') // false
+// map
+[,'a'].map(x => 1) // [empty, 1]
+// join
+[,'a',undefined,null].join('#') // "#a##"
+// toString
+[,'a',undefined,null].toString() // ",a,,"
+
+// ES6 则是明确将空位转为undefined。
+
+// Array.from方法会将数组的空位，转为undefined，也就是说，这个方法不会忽略空位。
+Array.from(['a',,'b'])
+// [ "a", undefined, "b" ]
+
+// 扩展运算符（...）也会将空位转为undefined。
+[...['a',,'b']]
+// ["a", undefined, "b"]
+
+// copyWithin()会连空位一起拷贝。
+[,'a','b',,].copyWithin(2,0)
+// [empty, "a", empty, "a"]
+
+// fill()会将空位视为正常的数组位置。
+new Array(3).fill('a') // ["a","a","a"]
+
+// for...of循环也会遍历空位。
+let arr = [, ,];
+for (let i of arr) {
+  console.log(1);
+}
+// 1 
+// 1
+
+// 上面代码中，数组arr有两个空位，for...of并没有忽略它们。如果改成map方法遍历，空位是会跳过的。
+
+// entries()、keys()、values()、find()和findIndex()会将空位处理成undefined
+
+// entries
+[...[,'a'].entries()]
+// [[0, undefined],[1, 'a']]
+
+// keys()
+[...[,'a'].keys()] // [0,1]
+
+// values()
+[...[,'a'].values()] // [undefined,"a"]
+
+// find()
+[,'a'].find(x => true) // undefined
+
+// findIndex()
+[,'a'].findIndex(x => true) // 0
+
+// 由于空位的处理规则非常不统一，所以建议避免出现空位。
+
+
+// 11. Array.prototype.sort() 的排序稳定性
+// 排序稳定性（stable sorting）是排序算法的重要属性，指的是排序关键字相同的项目，排序前后的顺序不变。
+const arr = [
+    'peach',
+    'straw',
+    'apple',
+    'spork'
+]
+const stableSorting = (s1, s2) => {
+    if(s1[0] < s2[0]) return -1;
+    return 1;
+}
+
+arr.sort(stableSorting)
+// ['apple', 'peach', 'straw', 'spork']
+// 上面代码对数组arr按照首字母进行排序。排序结果中，straw在spork的前面，跟原始顺序一致，所以排序算法stableSorting是稳定排序。
+
+const unstableSorting = (s1, s2) => {
+    if (s1[0] <= s2[0]) return -1;
+    return 1;
+};
+  
+arr.sort(unstableSorting)
+// 上面代码中，排序结果是spork在straw前面，跟原始顺序相反，所以排序算法unstableSorting是不稳定的。
+
+// 常见的排序算法之中，插入排序、合并排序、冒泡排序等都是稳定的，堆排序、快速排序等是不稳定的。
+// 不稳定排序的主要缺点是，多重排序时可能会产生问题。
+// 假设有一个姓和名的列表，要求按照“姓氏为主要关键字，名字为次要关键字”进行排序。
+// 开发者可能会先按名字排序，再按姓氏进行排序。如果排序算法是稳定的，这样就可以达到“先姓氏，后名字”的排序效果。
+// 如果是不稳定的，就不行。
+
+
+// 早先的 ECMAScript 没有规定，Array.prototype.sort()的默认排序算法是否稳定，留给浏览器自己决定，这导致某些实现是不稳定的。
+// ES2019 明确规定，Array.prototype.sort()的默认排序算法必须稳定。
+// 这个规定已经做到了，现在 JavaScript 各个主要实现的默认排序算法都是稳定的。
+
+
