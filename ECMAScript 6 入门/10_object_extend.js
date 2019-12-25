@@ -449,6 +449,210 @@ const clone3 = Object.create(
   Object.getOwnPropertyDescriptors(obj)
 )
 
+// 上面代码中，写法一的__proto__属性在非浏览器的环境下不一定部署，因此推荐使用写法二和写法三。
+
+// 扩展运算符可以用于合并两个对象
+let ab = { ...a, ...b };
+// 等同于
+let ab = Object.assign({}, a, b);
+
+// 如果用户自定义的属性，放在扩展运算符后面，则扩展运算符内部的同名属性会被覆盖掉。
+let aWithOverrides = { ...a, x: 1, y: 2 };
+// 等同于
+let aWithOverrides = { ...a, ...{ x: 1, y: 2 } };
+// 等同于
+let x = 1, y = 2, aWithOverrides = { ...a, x, y };
+// 等同于
+let aWithOverrides = Object.assign({}, a, { x: 1, y: 2 });
+// 上面代码中，a对象的x属性和y属性，拷贝到新对象后会被覆盖掉。
+// 这用来修改现有对象部分的属性就很方便了。
+let newVersion = {
+  ...previousVersion,
+  name: 'New Name' // Override the name property
+};
+// 上面代码中，newVersion对象自定义了name属性，其他属性全部复制自previousVersion对象。
+
+// 如果把自定义属性放在扩展运算符前面，就变成了设置新对象的默认属性值。
+let aWithDefaults = { x: 1, y: 2, ...a };
+// 等同于
+let aWithDefaults = Object.assign({}, { x: 1, y: 2 }, a);
+// 等同于
+let aWithDefaults = Object.assign({ x: 1, y: 2 }, a);
+
+// 与数组的扩展运算符一样，对象的扩展运算符后面可以跟表达式。
+const obj = {
+  ...(x > 1 ? {a: 1} : {}),
+  b: 2,
+}
+
+// 扩展运算符的参数对象之中，如果有取值函数get，这个函数是会执行的。
+
+// 并不会抛出错误，因为 x 属性只是被定义，但没执行
+let aWithXGetter = {
+  ...a,
+  get x() {
+    throw new Error('not throw yet')
+  }
+};
+// 会抛出错误，因为 x 属性被执行了
+let runtimeError = {
+  ...a,
+  ...{
+    get x() {
+      throw new Error('throw now');
+    }
+  }
+};
+
+// 7. 链判断运算符
+// 编程实务中，如果读取对象内部的某个属性，往往需要判断一下该对象是否存在。比如，要读取message.body.user.firstName，安全的写法是写成下面这样。
+const firstName = (message
+  && message.body
+  && message.body.user
+  && message.body.user.firstName) || 'default'
+// 或者使用三元运算符?:，判断一个对象是否存在。
+const footInput = myForm.querySelector('input[name=foo]')
+const footValue = footInput ? footInput.value : undefined
+
+// 这样的层层判断非常麻烦，因此 ES2020 引入了“链判断运算符”（optional chaining operator）?.，简化上面的写法
+const firstName = message?.body?.user?.firName || 'default'
+const fooValue = myForm.querySelector('input[name=foo]')?.value
+// 上面代码使用了?.运算符，直接在链式调用的时候判断，左侧的对象是否为null或undefined。如果是的，就不再往下运算，而是返回undefined。
+
+// 链判断运算符有三种用法。
+
+obj?.prop // 对象属性
+obj?.[expr] // 同上
+func?.(...args) // 函数或对象方法的调用
+
+// 下面是判断对象方法是否存在，如果存在就立即执行的例子。
+iterator.return?.()
+// 上面代码中，iterator.return如果有定义，就会调用该方法，否则直接返回undefined。
+
+// 对于那些可能没有实现的方法，这个运算符尤其有用。
+if (myForm.checkValidity?.() === false) {
+  // 表单校验失败
+  return;
+}
+// 上面代码中，老式浏览器的表单可能没有checkValidity这个方法，这时?.运算符就会返回undefined，判断语句就变成了undefined === false，所以就会跳过下面的代码。
+
+// 下面是这个运算符常见的使用形式，以及不使用该运算符时的等价形式。
+
+a?.b
+// 等同于
+a == null ? undefined : a.b
+
+a?.[x]
+// 等同于
+a == null ? undefined : a[x]
+
+a?.b()
+// 等同于
+a == null ? undefined : a.b()
+
+a?.()
+// 等同于
+a == null ? undefined : a()
+
+// 上面代码中，特别注意后两种形式，如果a?.b()里面的a.b不是函数，不可调用，那么a?.b()是会报错的。a?.()也是如此，如果a不是null或undefined，但也不是函数，那么a?.()会报错。
+
+// 使用这个运算符，有几个注意点。
+// （1）短路机制
+a?.[++x]
+// 等同于
+a == null ? undefined : a[++x]
+// 上面代码中，如果a是undefined或null，那么x不会进行递增运算。也就是说，链判断运算符一旦为真，右侧的表达式就不再求值。
+
+//（2）delete 运算符
+delete a?.b
+// 等同于
+a == null ? undefined : delete a.b
+// 上面代码中，如果a是undefined或null，会直接返回undefined，而不会进行delete运算。
+
+//（3）括号的影响
+// 如果属性链有圆括号，链判断运算符对圆括号外部没有影响，只对圆括号内部有影响。
+(a?.b).c
+// 等价于
+(a == null ? undefined : a.b).c
+// 上面代码中，?.对圆括号外部没有影响，不管a对象是否存在，圆括号后面的.c总是会执行。
+// 一般来说，使用?.运算符的场合，不应该使用圆括号。
+
+//（4）报错场合
+// 以下写法是禁止的，会报错。
+
+// 构造函数
+new a?.()
+new a?.b()
+
+// 链判断运算符的右侧有模板字符串
+a?.`{b}`
+a?.b`{c}`
+
+// 链判断运算符的左侧是 super
+super?.()
+super?.foo
+
+// 链运算符用于赋值运算符左侧
+a?.b = c
+
+// (5）右侧不得为十进制数值
+// 为了保证兼容以前的代码，允许foo?.3:0被解析成foo ? .3 : 0，
+// 因此规定如果?.后面紧跟一个十进制数字，那么?.不再被看成是一个完整的运算符，而会按照三元运算符进行处理，
+// 也就是说，那个小数点会归属于后面的十进制数字，形成一个小数。
 
 
+// 8. Null 判断运算符
+// 读取对象属性的时候，如果某个属性的值是null或undefined，有时候需要为它们指定默认值。常见做法是通过||运算符指定默认值。
+const headerText = response.settings.headerText || 'Hello, world!';
+const animationDuration = response.settings.animationDuration || 300;
+const showSplashScreen = response.settings.showSplashScreen || true;
+// 上面的三行代码都通过||运算符指定默认值，但是这样写是错的。
+// 开发者的原意是，只要属性的值为null或undefined，默认值就会生效，
+// 但是属性的值如果为空字符串或false或0，默认值也会生效。
+
+// 为了避免这种情况，ES2020 引入了一个新的 Null 判断运算符??。
+// 它的行为类似||，但是只有运算符左侧的值为null或undefined时，才会返回右侧的值。
+const headerText = response.settings.headerText ?? 'Hello, world!';
+const animationDuration = response.settings.animationDuration ?? 300;
+const showSplashScreen = response.settings.showSplashScreen ?? true;
+// 上面代码中，默认值只有在属性值为null或undefined时，才会生效。
+
+// 这个运算符的一个目的，就是跟链判断运算符?.配合使用，为null或undefined的值设置默认值。
+
+const animationDuration = response.settings?.animationDuration ?? 300;
+// 上面代码中，response.settings如果是null或undefined，就会返回默认值300。
+
+// 这个运算符很适合判断函数参数是否赋值。
+function Component(props) {
+  const enable = props.enabled ?? true;
+  // …
+}
+// 上面代码判断props参数的enabled属性是否赋值，等同于下面的写法。
+function Component(props) {
+  const {
+    enabled: enable = true,
+  } = props;
+  // …
+}
+// ??有一个运算优先级问题，它与&&和||的优先级孰高孰低。现在的规则是，如果多个逻辑运算符一起使用，必须用括号表明优先级，否则会报错
+
+// 报错
+lhs && middle ?? rhs
+lhs ?? middle && rhs
+lhs || middle ?? rhs
+lhs ?? middle || rhs
+
+//上面四个表达式都会报错，必须加入表明优先级的括号。
+
+(lhs && middle) ?? rhs;
+lhs && (middle ?? rhs);
+
+(lhs ?? middle) && rhs;
+lhs ?? (middle && rhs);
+
+(lhs || middle) ?? rhs;
+lhs || (middle ?? rhs);
+
+(lhs ?? middle) || rhs;
+lhs ?? (middle || rhs);
 
