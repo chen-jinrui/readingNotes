@@ -419,14 +419,107 @@ const FOO_KEY = Symbol('foo');
 // 8. 内置的 Symbol 值
 // 除了定义自己使用的 Symbol 值以外，ES6 还提供了 11 个内置的 Symbol 值，指向语言内部使用的方法。
 
+// 8-1 Symbol.hasInstance
+// 对象的 Symbol.hasInstance 属性，指向一个内部方法。当其他对象使用 instanceof 运算符，
+// 判断是否为该对象的实例时，会调用这个方法。比如 foo instanceof Foo 在语言内部，实际调用
+// 的是 Foo[Symbol.hasInstance](foo)
+class Myclass {
+  [Symbol.hasInstance](foo) {
+    return foo instanceof Array;
+  }
+}
+[1, 2, 3] instanceof new Myclass() // true
+// 上面代码中，MyClass是一个类，new MyClass()会返回一个实例。该实例的Symbol.hasInstance方法，
+// 会在进行instanceof运算时自动调用，判断左侧的运算子是否为Array的实例。
+
+class Even {
+  static [Symbol.hasInstance](obj) {
+    return Number(obj) % 2 === 0;
+  }
+}
+// 等同于
+const Even = {
+  [Symbol.hasInstance](obj) {
+    return Number(obj) % 2 === 0;
+  }
+};
+
+1 instanceof Even // false
+2 instanceof Even // true
+12345 instanceof Even // false
+
+// 8-2 Symbol.isConcatSpreadable 
+// 对象的 Symbol.isConcatSpreadable 属性等于一个布尔值，表示该对象用于
+// Array.prototype.concat()时，是否可以展开
+
+// 8-3 Symbol.species
+// 对象的Symbol.species属性，指向一个构造函数。创建衍生对象时，会使用该属性。
+
+// 8-4 Symbol.match
+// 对象的Symbol.match属性，指向一个函数。
+// 当执行str.match(myObject)时，如果该属性存在，会调用它，返回该方法的返回值。
 
 
+// 8-5 Symbol.replace
+// 对象的Symbol.replace属性，指向一个方法，
+// 当该对象被String.prototype.replace方法调用时，会返回该方法的返回值。
 
+// 8-6 Symbol.search
+// 对象的Symbol.search属性，指向一个方法，
+// 当该对象被String.prototype.search方法调用时，会返回该方法的返回值。
 
+// 8-7 Symbol.split
+// 对象的Symbol.split属性，指向一个方法，
+// 当该对象被String.prototype.split方法调用时，会返回该方法的返回值。
 
+// 8-8 Symbol.iterator
+// 对象的Symbol.iterator属性，指向该对象的默认遍历器方法。
+// 对象进行for...of循环时，会调用Symbol.iterator方法，返回该对象的默认遍历器，
 
+// 8-9 Symbol.toPrimitive
+// 对象的Symbol.toPrimitive属性，指向一个方法。
+// 该对象被转为原始类型的值时，会调用这个方法，返回该对象对应的原始类型值
 
+// Symbol.toPrimitive被调用时，会接受一个字符串参数，表示当前运算的模式，一共有三种模式。
+// Number：该场合需要转成数值
+// String：该场合需要转成字符串
+// Default：该场合可以转成数值，也可以转成字符串
 
+// 8-10 Symbol.toStringTag
+// 对象的Symbol.toStringTag属性，指向一个方法。
+// 在该对象上面调用Object.prototype.toString方法时，如果这个属性存在，它的返回值会出现在toString方法返回的字符串之中，
+// 表示对象的类型。也就是说，这个属性可以用来定制[object Object]或[object Array]中object后面的那个字符串。
+// 例一
+({[Symbol.toStringTag]: 'Foo'}.toString())
+// "[object Foo]"
+
+// 例二
+class Collection {
+  get [Symbol.toStringTag]() {
+    return 'xxx';
+  }
+}
+let x = new Collection();
+Object.prototype.toString.call(x) // "[object xxx]"
+
+// ES6 新增内置对象的Symbol.toStringTag属性值如下。
+// JSON[Symbol.toStringTag]：'JSON'
+// Math[Symbol.toStringTag]：'Math'
+// Module 对象M[Symbol.toStringTag]：'Module'
+// ArrayBuffer.prototype[Symbol.toStringTag]：'ArrayBuffer'
+// DataView.prototype[Symbol.toStringTag]：'DataView'
+// Map.prototype[Symbol.toStringTag]：'Map'
+// Promise.prototype[Symbol.toStringTag]：'Promise'
+// Set.prototype[Symbol.toStringTag]：'Set'
+// %TypedArray%.prototype[Symbol.toStringTag]：'Uint8Array'等
+// WeakMap.prototype[Symbol.toStringTag]：'WeakMap'
+// WeakSet.prototype[Symbol.toStringTag]：'WeakSet'
+// %MapIteratorPrototype%[Symbol.toStringTag]：'Map Iterator'
+// %SetIteratorPrototype%[Symbol.toStringTag]：'Set Iterator'
+// %StringIteratorPrototype%[Symbol.toStringTag]：'String Iterator'
+// Symbol.prototype[Symbol.toStringTag]：'Symbol'
+// Generator.prototype[Symbol.toStringTag]：'Generator'
+// GeneratorFunction.prototype[Symbol.toStringTag]：'GeneratorFunction'
 
 
 
